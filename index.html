@@ -287,7 +287,7 @@ tr.projected td{background:rgba(26,61,110,.08)}
 
 <script>
 /* ── Config ─────────────────────────────── */
-const SCRIPT_URL = 'https://twilight-math-1810.agarwalvaishnavi2004.workers.dev';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxlxigPEGcFTiZ44zYM-VwfTbMloD7xbB6FmT1ibiUfVhbzk-_ThztfVK2YHTAkfPTx/exec';
 const PASSWORD   = 'Apex2026';
 
 /* ── State ──────────────────────────────── */
@@ -356,26 +356,38 @@ function showApp(){
 /* ── JSONP fetch ────────────────────────── */
 function load(){
   setSt('Loading...');showL('Fetching dashboard data...');
-  const cbName='_cb'+Date.now();
+  // Remove any previous JSONP script tags
+  const old=document.getElementById('_jsonp_script');
+  if(old)old.remove();
+  const cbName='_cb_'+Date.now();
   const script=document.createElement('script');
-  script.src=SCRIPT_URL+'?callback='+cbName;
-  script.onerror=function(){
+  script.id='_jsonp_script';
+  let timer=setTimeout(function(){
     hideL();setSt('Error loading data. Please refresh.','err');
-    document.body.removeChild(script);
+    delete window[cbName];
+    script.remove();
+  },15000);
+  script.onerror=function(){
+    clearTimeout(timer);
+    hideL();setSt('Error loading data. Please refresh.','err');
+    delete window[cbName];
+    script.remove();
   };
   window[cbName]=function(data){
+    clearTimeout(timer);
     D=data;
     if(localCutoff){
       D.cutoff=MONTHS.indexOf(localCutoff)+1;
       D.kpis.cutoff=D.cutoff;
     }
     delete window[cbName];
-    document.body.removeChild(script);
+    script.remove();
     renderAll();
     hideL();
     setSt('Loaded — '+new Date().toLocaleTimeString(),'ok');
   };
-  document.body.appendChild(script);
+  script.src=SCRIPT_URL+'?callback='+cbName+'&t='+Date.now();
+  document.head.appendChild(script);
 }
 
 /* ── Cutoff (local only — read-only dashboard) ── */
