@@ -1,11 +1,571 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="refresh" content="0;url=https://script.google.com/macros/s/AKfycbwNjxLtWn7fWwdTMZQPD2Iyzx_LKEUwNAJZclJj1XMBKvS5z-XnDyNnO2z6oDTU1iRF/exec">
-<script>window.location.replace("https://script.google.com/macros/s/AKfycbwNjxLtWn7fWwdTMZQPD2Iyzx_LKEUwNAJZclJj1XMBKvS5z-XnDyNnO2z6oDTU1iRF/exec");</script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Cash Flow Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{background:#07090c;color:#d4dce8;font-family:'IBM Plex Mono',monospace;font-size:14px;line-height:1.5;width:100%;overflow-x:hidden}
+button,input,select{font:inherit}
+button{cursor:pointer;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:#07090c;--sf:#0d1117;--sf2:#131920;
+  --bd:#1c2330;--bd2:#243040;--tx:#d4dce8;
+  --mut:#7a8899;--m2:#4a5568;
+  --ac:#3b82f6;--gr:#10b981;--gr2:#34d399;
+  --rd:#ef4444;--am:#f59e0b;--pu:#8b5cf6;--cy:#06b6d4;
+  --ff:'IBM Plex Sans',sans-serif;--fm:'IBM Plex Mono',monospace;
+}
+.loading{display:none;position:fixed;inset:0;background:rgba(7,9,12,.92);z-index:9999;align-items:center;justify-content:center;flex-direction:column;gap:14px}
+.spinner{width:40px;height:40px;border:3px solid rgba(59,130,246,.2);border-top-color:#3b82f6;border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-msg{font-family:var(--ff);font-size:15px;font-weight:600;color:#e2e8f0}
+.login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+.login-card{width:100%;max-width:400px;background:var(--sf);border:1px solid var(--bd);border-radius:16px;padding:28px 22px}
+.login-title{font-family:var(--ff);font-size:22px;font-weight:700;color:#fff;margin-bottom:3px}
+.login-sub{font-size:13px;color:var(--mut);margin-bottom:22px}
+.login-error{color:#f87171;font-size:13px;min-height:20px;margin-bottom:10px}
+.login-card input{display:block;width:100%;background:var(--sf2);border:1px solid var(--bd2);border-radius:10px;color:var(--tx);padding:14px;outline:none;margin-bottom:12px;font-size:16px;-webkit-appearance:none}
+.login-card input:focus{border-color:var(--ac)}
+.btn{display:inline-flex;align-items:center;justify-content:center;min-height:46px;border:none;border-radius:10px;font-family:var(--ff);font-size:14px;font-weight:700;padding:0 18px;transition:opacity .15s;user-select:none}
+.btn:active{opacity:.8}
+.btn-primary{background:linear-gradient(135deg,var(--ac),var(--pu));color:#fff}
+.btn-soft{background:transparent;border:1px solid var(--bd2);color:var(--mut)}
+.btn-xs{min-height:36px;font-size:12px;padding:0 10px}
+.app{display:none;width:100%;padding:12px}
+.status{font-size:12px;min-height:18px;color:var(--mut);margin:6px 0}
+.status.ok{color:var(--gr2)}.status.err{color:#f87171}
+.header{border-bottom:1px solid var(--bd);padding-bottom:14px;margin-bottom:12px}
+.header-row{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.header h1{font-family:var(--ff);font-size:18px;font-weight:700;color:#fff;line-height:1.25}
+.header p{font-size:11px;color:var(--mut);margin-top:3px}
+.header-right{display:flex;align-items:center;gap:8px;flex-shrink:0}
+.live-dot{width:7px;height:7px;background:var(--gr);border-radius:50%;animation:pulse 2s ease-in-out infinite}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(16,185,129,.5)}50%{box-shadow:0 0 0 6px transparent}}
+.badge{background:linear-gradient(135deg,var(--ac),var(--pu));color:#fff;font-family:var(--ff);font-size:10px;font-weight:700;padding:4px 10px;border-radius:20px;letter-spacing:.5px;white-space:nowrap}
+.period-bar{display:flex;flex-direction:column;gap:8px;background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:12px;margin-bottom:10px}
+.period-label{font-family:var(--ff);font-size:11px;font-weight:700;color:var(--mut);text-transform:uppercase;letter-spacing:.7px}
+.pill{font-family:var(--ff);font-size:13px;font-weight:700;border-radius:8px;padding:9px 12px;display:block}
+.pill-actual{background:#0a1f12;border:1px solid #1a5e2a;color:var(--gr2)}
+.pill-proj{background:#0a1525;border:1px solid #1a3d6e;color:#60a5fa}
+.cutoff-row{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.cutoff-select{flex:1;min-width:120px;background:var(--sf2);border:1px solid var(--bd2);border-radius:8px;color:var(--tx);padding:10px 12px;outline:none;font-size:16px;-webkit-appearance:none}
+.disclaimer{display:flex;flex-wrap:wrap;align-items:flex-start;gap:6px;background:rgba(245,158,11,.05);border:1px solid rgba(245,158,11,.15);border-radius:10px;padding:10px 12px;margin-bottom:10px;font-size:12px;color:var(--mut);line-height:1.5}
+.disclaimer strong{color:#fbbf24;display:block;width:100%}
+.close-btn{background:transparent;border:none;color:var(--m2);font-size:20px;padding:0 4px;margin-left:auto;cursor:pointer}
+.tabs{display:flex;gap:4px;background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:5px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;overscroll-behavior-x:contain;margin-bottom:10px}
+.tabs::-webkit-scrollbar{display:none}
+.tab{flex-shrink:0;border:none;background:transparent;color:var(--mut);font-family:var(--ff);font-size:13px;font-weight:600;padding:10px 14px;border-radius:8px;white-space:nowrap;min-height:44px;display:flex;align-items:center}
+.tab.active{background:var(--sf2);color:var(--tx);border:1px solid var(--bd2)}
+.section{display:none}.section.active{display:block}
+.grid{display:grid;gap:10px}
+.grid-2{grid-template-columns:1fr}
+.grid-4{grid-template-columns:1fr 1fr}
+.section-label{font-family:var(--ff);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;padding:6px 10px;border-radius:0 6px 6px 0;margin-bottom:8px}
+.label-actual{color:var(--gr2);background:#0a1f12;border-left:3px solid #1a5e2a}
+.label-proj{color:#60a5fa;background:#0a1525;border-left:3px solid #1a3d6e}
+.card{background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:14px;overflow:hidden}
+.card-title{font-family:var(--ff);font-size:12px;font-weight:700;color:var(--mut);text-transform:uppercase;letter-spacing:.6px;margin-bottom:4px}
+.card-sub{font-family:var(--fm);font-size:11px;color:var(--m2);margin-bottom:12px}
+.kpi{background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:14px;position:relative;overflow:hidden}
+.kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--ac)}
+.kpi.green::before{background:linear-gradient(90deg,var(--gr),var(--gr2))}
+.kpi.red::before{background:linear-gradient(90deg,var(--rd),var(--am))}
+.kpi.amber::before{background:linear-gradient(90deg,var(--am),#fbbf24)}
+.kpi.purple::before{background:linear-gradient(90deg,var(--pu),var(--ac))}
+.kpi.blue::before{background:linear-gradient(90deg,var(--ac),var(--cy))}
+.kpi-label{font-family:var(--ff);font-size:10px;text-transform:uppercase;letter-spacing:.7px;color:var(--m2);margin-bottom:6px}
+.kpi-value{font-family:var(--ff);font-size:22px;font-weight:700;color:#fff;line-height:1.15;word-break:break-all}
+.kpi-sub{font-size:11px;color:var(--m2);margin-top:5px;line-height:1.3}
+.chart-box{height:240px;position:relative}.chart-box.tall{height:260px}
+.table-wrap{width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
+.table-wrap table{min-width:520px;width:100%;border-collapse:collapse}
+th{font-family:var(--ff);font-size:10px;text-transform:uppercase;letter-spacing:.6px;color:var(--m2);padding:8px 10px;border-bottom:1px solid var(--bd2);text-align:right;white-space:nowrap}
+th:first-child,td:first-child{text-align:left}
+td{padding:8px 10px;font-size:12px;text-align:right;border-bottom:1px solid var(--bd);color:var(--mut);white-space:nowrap}
+td:first-child{color:var(--tx)}
+tr.actual td{background:rgba(26,94,42,.12)}
+tr.projected td{background:rgba(26,61,110,.08)}
+.pos{color:var(--gr2)!important;font-weight:700}.neg{color:#f87171!important;font-weight:700}
+.driver-note{font-size:12px;color:var(--mut);padding:16px;text-align:center;line-height:1.7}
+.product-row{display:flex;flex-direction:column;gap:6px;padding:10px 0;border-bottom:1px solid var(--bd)}
+.product-row:last-child{border-bottom:none}
+.product-name{font-family:var(--ff);font-size:13px;color:var(--tx);font-weight:600}
+.bar-bg{height:8px;background:var(--sf2);border-radius:4px;overflow:hidden}
+.bar{height:100%;border-radius:4px}
+.product-values{display:flex;justify-content:space-between;font-size:12px}
+@media(min-width:900px){
+  .app{max-width:1520px;margin:0 auto;padding:18px}
+  .header{display:flex;align-items:flex-end;justify-content:space-between}
+  .header h1{font-size:22px}
+  .period-bar{flex-direction:row;align-items:center}
+  .cutoff-select{flex:0 0 auto;min-width:auto}
+  .grid-2{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .grid-4{grid-template-columns:repeat(4,minmax(0,1fr))}
+  .chart-box{height:260px}
+  .product-row{flex-direction:row;align-items:center;gap:10px}
+  .product-row .product-name{width:110px;flex-shrink:0}
+  .product-row .bar-bg{flex:1}
+  .product-row .product-values{width:150px;flex-shrink:0;justify-content:flex-end}
+  .table-wrap table{min-width:unset}
+}
+</style>
 </head>
 <body>
-<p style="font-family:sans-serif;color:#666;text-align:center;margin-top:40px;">Opening Cash Flow Dashboard...</p>
+
+<div id="login" class="login-wrap">
+  <div class="login-card">
+    <div class="login-title">Cash Flow Dashboard</div>
+    <div class="login-sub">Apex Manufacturing Ltd | FY 2026</div>
+    <div id="lerr" class="login-error"></div>
+    <input type="password" id="lpw" placeholder="Enter password" autocomplete="current-password" onkeydown="if(event.key==='Enter')tryLogin()">
+    <button class="btn btn-primary" style="width:100%;" onclick="tryLogin()">Enter Dashboard</button>
+  </div>
+</div>
+
+<div id="app" class="app">
+  <div id="loading" class="loading">
+    <div class="spinner"></div>
+    <div id="loadingMsg" class="loading-msg">Loading...</div>
+  </div>
+
+  <div class="header">
+    <div class="header-row">
+      <div>
+        <h1>Cash Flow Dashboard</h1>
+        <p>Apex Manufacturing Ltd | FY 2026 | Actuals + Projection</p>
+      </div>
+      <div class="header-right">
+        <span class="live-dot"></span>
+        <span style="color:var(--gr2);font-size:11px;">LIVE</span>
+        <span class="badge">FY 2026</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="period-bar">
+    <span class="period-label">Period</span>
+    <span class="pill pill-actual" id="act-b">Actuals: Jan – Apr</span>
+    <span class="pill pill-proj" id="prj-b">Projection: May – Dec</span>
+    <div class="cutoff-row">
+      <span class="period-label">Cutoff month</span>
+      <select class="cutoff-select" id="csel" onchange="updCutoff(this.value)">
+        <option>Jan</option><option>Feb</option><option>Mar</option>
+        <option>Apr</option><option>May</option><option>Jun</option>
+        <option>Jul</option><option>Aug</option><option>Sep</option>
+        <option>Oct</option><option>Nov</option><option>Dec</option>
+      </select>
+    </div>
+  </div>
+
+  <div id="disclaimer" class="disclaimer">
+    <strong>Sample data</strong>
+    <span>Figures are illustrative. Replace Actuals and Drivers before use.</span>
+    <button class="close-btn" onclick="document.getElementById('disclaimer').style.display='none'">&times;</button>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="sw('overview',this)">Overview</button>
+    <button class="tab" onclick="sw('cashflow',this)">Cash Flow</button>
+    <button class="tab" onclick="sw('ar',this)">AR &amp; DSO</button>
+    <button class="tab" onclick="sw('products',this)">Products</button>
+    <button class="tab" onclick="sw('drivers',this)">Drivers</button>
+  </div>
+
+  <div id="status" class="status"></div>
+
+  <div id="sec-overview" class="section active">
+    <div style="margin-bottom:12px;">
+      <div class="section-label label-actual">YTD Actuals</div>
+      <div class="grid grid-4" id="kpi-act" style="margin-bottom:14px;"></div>
+      <div class="section-label label-proj">Full Year</div>
+      <div class="grid grid-4" id="kpi-fy"></div>
+    </div>
+    <div class="grid grid-2">
+      <div class="card">
+        <div class="card-title">Monthly Overview</div>
+        <div class="card-sub">Collections, outflow and net cash</div>
+        <div class="chart-box"><canvas id="ch-ov"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Net Cash Flow</div>
+        <div class="card-sub">Monthly surplus or deficit</div>
+        <div class="chart-box"><canvas id="ch-net"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="sec-cashflow" class="section">
+    <div class="grid grid-4" id="kpi-cf" style="margin-bottom:12px;"></div>
+    <div class="grid grid-2" style="margin-bottom:12px;">
+      <div class="card">
+        <div class="card-title">Sales vs Collections</div>
+        <div class="card-sub">Invoiced vs cash received</div>
+        <div class="chart-box"><canvas id="ch-svc"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Inflow vs Outflow</div>
+        <div class="card-sub">Cash in vs cash out</div>
+        <div class="chart-box"><canvas id="ch-io"></canvas></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Monthly Schedule</div>
+      <div class="table-wrap" id="cf-tbl"></div>
+    </div>
+  </div>
+
+  <div id="sec-ar" class="section">
+    <div class="grid grid-4" id="kpi-ar" style="margin-bottom:12px;"></div>
+    <div class="grid grid-2" style="margin-bottom:12px;">
+      <div class="card">
+        <div class="card-title">AR Balance</div>
+        <div class="card-sub">Closing AR per month</div>
+        <div class="chart-box"><canvas id="ch-ar"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-title">DSO Trend</div>
+        <div class="card-sub">Days sales outstanding</div>
+        <div class="chart-box"><canvas id="ch-dso"></canvas></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">AR Schedule</div>
+      <div class="table-wrap" id="ar-tbl"></div>
+    </div>
+  </div>
+
+  <div id="sec-products" class="section">
+    <div class="grid grid-4" id="kpi-prod" style="margin-bottom:12px;"></div>
+    <div class="grid grid-2" style="margin-bottom:12px;">
+      <div class="card">
+        <div class="card-title">FY Sales vs Collections</div>
+        <div id="prod-bars" style="margin-top:8px;"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Revenue Mix</div>
+        <div class="card-sub">FY share by product</div>
+        <div class="chart-box tall"><canvas id="ch-mix"></canvas></div>
+      </div>
+    </div>
+    <div class="grid grid-2">
+      <div class="card">
+        <div class="card-title">Monthly Sales</div>
+        <div class="chart-box"><canvas id="ch-ps"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Monthly Collections</div>
+        <div class="chart-box"><canvas id="ch-pc"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="sec-drivers" class="section">
+    <div class="card">
+      <div class="card-title">Model Drivers</div>
+      <div class="card-sub">View only — changes must be made in Google Sheet</div>
+      <div class="table-wrap">
+        <table style="min-width:380px;">
+          <thead>
+            <tr>
+              <th style="text-align:left;">Parameter</th>
+              <th>Default</th>
+              <th>In Use</th>
+            </tr>
+          </thead>
+          <tbody id="driv-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+/* ── Config ─────────────────────────────── */
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyvgyKWyDsPXgdaDpD_vR53QTmZZgXGXVPT-2iA2aOCLdxw0ULuMZFt7yb-AJtnBT1F/exec';
+const PASSWORD   = 'Apex2026';
+
+/* ── State ──────────────────────────────── */
+let D = null;
+let localCutoff = null;
+const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const COLORS  = ['#3b82f6','#8b5cf6','#06b6d4','#10b981'];
+const AC = '#34d399', PC = '#60a5fa';
+const charts = {};
+
+/* ── Loading ────────────────────────────── */
+function showL(m){document.getElementById('loadingMsg').textContent=m||'Loading...';document.getElementById('loading').style.display='flex'}
+function hideL(){document.getElementById('loading').style.display='none'}
+function setSt(m,t){const el=document.getElementById('status');el.textContent=m||'';el.className='status'+(t?' '+t:'')}
+
+/* ── Formatters ─────────────────────────── */
+const fk=n=>{n=n||0;const a=Math.abs(n);const s=n<0?'-':'';if(a>=1e6)return s+'$'+(a/1e6).toFixed(2)+'M';if(a>=1e3)return s+'$'+(a/1e3).toFixed(1)+'K';return s+'$'+Math.round(a);};
+const fp=n=>((n||0)*100).toFixed(1)+'%';
+const fd=n=>(n||0).toFixed(1);
+
+/* ── KPI ────────────────────────────────── */
+function kpi(label,value,cls,sub){
+  return`<div class="kpi ${cls||'blue'}"><div class="kpi-label">${label}</div><div class="kpi-value">${value}</div>${sub?`<div class="kpi-sub">${sub}</div>`:''}</div>`;
+}
+
+/* ── Chart helpers ──────────────────────── */
+function axes(){
+  return{
+    x:{ticks:{color:'#4a5568',font:{size:10}},grid:{color:'rgba(28,35,48,1)'},border:{color:'#1c2330'}},
+    y:{ticks:{color:'#4a5568',font:{size:10}},grid:{color:'rgba(28,35,48,.7)'},border:{color:'#1c2330'}}
+  };
+}
+function cOpts(ex){
+  ex=ex||{};
+  return{responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{labels:{color:'#7a8899',font:{family:'IBM Plex Mono',size:10},boxWidth:10}},title:{display:false},...(ex.plugins||{})},
+    scales:axes(),...ex};
+}
+function mkChart(id,type,data,opts){
+  if(charts[id]){charts[id].destroy();delete charts[id]}
+  const el=document.getElementById(id);
+  if(!el)return;
+  charts[id]=new Chart(el,{type,data,options:opts||cOpts()});
+}
+
+/* ── Auth ───────────────────────────────── */
+window.onload=function(){
+  if(sessionStorage.getItem('cf')==='1')showApp();
+  else document.getElementById('login').style.display='flex';
+};
+function tryLogin(){
+  const pw=document.getElementById('lpw').value;
+  if(pw===PASSWORD){
+    sessionStorage.setItem('cf','1');
+    showApp();
+  } else {
+    document.getElementById('lerr').textContent='Incorrect password.';
+  }
+}
+function showApp(){
+  document.getElementById('login').style.display='none';
+  document.getElementById('app').style.display='block';
+  load();
+}
+
+/* ── JSONP fetch ────────────────────────── */
+function load(){
+  setSt('Loading...');showL('Fetching dashboard data...');
+  const cbName='_cb'+Date.now();
+  const script=document.createElement('script');
+  script.src=SCRIPT_URL+'?callback='+cbName;
+  script.onerror=function(){
+    hideL();setSt('Error loading data. Please refresh.','err');
+    document.body.removeChild(script);
+  };
+  window[cbName]=function(data){
+    D=data;
+    if(localCutoff){
+      D.cutoff=MONTHS.indexOf(localCutoff)+1;
+      D.kpis.cutoff=D.cutoff;
+    }
+    delete window[cbName];
+    document.body.removeChild(script);
+    renderAll();
+    hideL();
+    setSt('Loaded — '+new Date().toLocaleTimeString(),'ok');
+  };
+  document.body.appendChild(script);
+}
+
+/* ── Cutoff (local only — read-only dashboard) ── */
+function updCutoff(val){
+  localCutoff=val;
+  if(!D)return;
+  const idx=MONTHS.indexOf(val)+1;
+  D.cutoff=idx;
+  D.kpis.cutoff=idx;
+  D.kpis.cutoffLabel=val;
+  // recalc YTD from existing monthly data
+  const actuals=D.monthly.slice(0,idx);
+  const sum=arr=>arr.reduce((a,b)=>a+b,0);
+  D.kpis.ytdSales=sum(actuals.map(m=>m.totalSales));
+  D.kpis.ytdColl =sum(actuals.map(m=>m.totalColl));
+  D.kpis.ytdOut  =sum(actuals.map(m=>m.totalOut));
+  D.kpis.ytdNet  =sum(actuals.map(m=>m.netCash));
+  D.kpis.currentAR=D.monthly[idx-1].ar;
+  const dsoA=actuals.map(m=>m.dso).filter(v=>v>0);
+  const effA=actuals.map(m=>m.collEff).filter(v=>v>0);
+  D.kpis.avgDSO   =dsoA.length?sum(dsoA)/dsoA.length:0;
+  D.kpis.avgCollEff=effA.length?sum(effA)/effA.length:0;
+  D.monthly=D.monthly.map((m,i)=>({...m,isActual:i+1<=idx}));
+  renderAll();
+}
+
+/* ── Render all ─────────────────────────── */
+function renderAll(){
+  updateSplit();renderOverview();renderCashFlow();renderAR();renderProducts();renderDrivers();
+  setTimeout(()=>Object.values(charts).forEach(c=>c?.resize?.()),120);
+}
+function updateSplit(){
+  const c=D.cutoff;
+  document.getElementById('act-b').textContent='Actuals: Jan – '+MONTHS[c-1];
+  document.getElementById('prj-b').textContent=c>=12?'Full year actuals':'Projection: '+MONTHS[c]+' – Dec';
+  document.getElementById('csel').value=MONTHS[c-1];
+}
+
+/* ── Overview ───────────────────────────── */
+function renderOverview(){
+  const k=D.kpis,t=D.monthly,lbl=t.map(r=>r.month);
+  document.getElementById('kpi-act').innerHTML=
+    kpi('YTD Sales',fk(k.ytdSales),'green','Actual invoiced')+
+    kpi('YTD Collected',fk(k.ytdColl),'green',fp(k.ytdColl/Math.max(k.ytdSales,1))+' rate')+
+    kpi('YTD Paid Out',fk(k.ytdOut),'green','Actual outflow')+
+    kpi('YTD Net Cash',fk(k.ytdNet),k.ytdNet>=0?'green':'red','Surplus / deficit');
+  document.getElementById('kpi-fy').innerHTML=
+    kpi('FY Sales',fk(k.fySales),'blue','Full year')+
+    kpi('FY Inflow',fk(k.fyInflow),'blue',fp(k.fyInflow/Math.max(k.fySales,1)))+
+    kpi('FY Outflow',fk(k.fyOutflow),'red','Full year cost')+
+    kpi('FY Net Cash',fk(k.fyNet),k.fyNet>=0?'blue':'red','Year-end');
+  mkChart('ch-ov','bar',{labels:lbl,datasets:[
+    {label:'Collections',data:t.map(r=>r.totalColl),backgroundColor:t.map(r=>r.isActual?'rgba(52,211,153,.5)':'rgba(96,165,250,.38)'),borderColor:t.map(r=>r.isActual?AC:PC),borderWidth:1},
+    {label:'Outflow',data:t.map(r=>r.totalOut),backgroundColor:'rgba(239,68,68,.3)',borderColor:'#ef4444',borderWidth:1},
+    {label:'Net',data:t.map(r=>r.netCash),type:'line',borderColor:PC,backgroundColor:'transparent',borderWidth:2,pointRadius:3,tension:.3}
+  ]});
+  mkChart('ch-net','bar',{labels:lbl,datasets:[
+    {label:'Net Cash',data:t.map(r=>r.netCash),
+      backgroundColor:t.map(r=>r.netCash>=0?(r.isActual?'rgba(52,211,153,.55)':'rgba(96,165,250,.42)'):'rgba(239,68,68,.48)'),
+      borderColor:t.map(r=>r.netCash>=0?(r.isActual?AC:PC):'#ef4444'),borderWidth:1}
+  ]},cOpts({plugins:{legend:{display:false}}}));
+}
+
+/* ── Cash Flow ──────────────────────────── */
+function renderCashFlow(){
+  const k=D.kpis,t=D.monthly,lbl=t.map(r=>r.month);
+  const rate=k.fySales?k.fyInflow/k.fySales:0;
+  document.getElementById('kpi-cf').innerHTML=
+    kpi('FY Total Sales',fk(k.fySales),'blue','Invoiced full year')+
+    kpi('FY Cash Inflow',fk(k.fyInflow),'green',fp(rate)+' collection rate')+
+    kpi('FY Cash Outflow',fk(k.fyOutflow),'red','Full year costs')+
+    kpi('Collection Gap',fk(k.fySales-k.fyInflow),'amber','Sales not yet collected');
+  mkChart('ch-svc','bar',{labels:lbl,datasets:[
+    {label:'Sales',data:t.map(r=>r.totalSales),backgroundColor:t.map(r=>r.isActual?'rgba(52,211,153,.22)':'rgba(96,165,250,.15)'),borderColor:t.map(r=>r.isActual?AC:PC),borderWidth:1},
+    {label:'Collections',data:t.map(r=>r.totalColl),backgroundColor:t.map(r=>r.isActual?'rgba(52,211,153,.52)':'rgba(96,165,250,.4)'),borderColor:t.map(r=>r.isActual?AC:PC),borderWidth:2}
+  ]});
+  mkChart('ch-io','bar',{labels:lbl,datasets:[
+    {label:'Inflow',data:t.map(r=>r.totalColl),backgroundColor:'rgba(16,185,129,.48)',borderColor:'#10b981',borderWidth:1},
+    {label:'Outflow',data:t.map(r=>r.totalOut),backgroundColor:'rgba(239,68,68,.4)',borderColor:'#ef4444',borderWidth:1}
+  ]});
+  const rows=t.map(r=>`<tr class="${r.isActual?'actual':'projected'}">
+    <td>${r.month}</td><td>${r.isActual?'Actual':'Projected'}</td>
+    <td>${fk(r.totalSales)}</td><td>${fk(r.totalColl)}</td><td>${fk(r.totalOut)}</td>
+    <td class="${r.netCash>=0?'pos':'neg'}">${fk(r.netCash)}</td>
+    <td>${fp(r.collEff)}</td>
+  </tr>`).join('');
+  document.getElementById('cf-tbl').innerHTML=`<table><thead><tr>
+    <th>Month</th><th>Status</th><th>Sales</th><th>Collections</th><th>Outflow</th><th>Net Cash</th><th>Coll.%</th>
+  </tr></thead><tbody>${rows}</tbody></table>`;
+}
+
+/* ── AR ─────────────────────────────────── */
+function renderAR(){
+  const k=D.kpis,t=D.monthly,lbl=t.map(r=>r.month);
+  document.getElementById('kpi-ar').innerHTML=
+    kpi('Current AR',fk(k.currentAR),'red','Closing '+MONTHS[k.cutoff-1])+
+    kpi('Avg DSO',fd(k.avgDSO)+' days','amber','Actual months avg')+
+    kpi('Avg Coll. Eff.',fp(k.avgCollEff),'green','Actual months avg')+
+    kpi('Peak AR',fk(k.peakAR),'purple','Highest full year');
+  mkChart('ch-ar','line',{labels:lbl,datasets:[
+    {label:'Closing AR',data:t.map(r=>r.ar),borderColor:PC,backgroundColor:'rgba(239,68,68,.05)',fill:true,borderWidth:2.5,pointRadius:3,tension:.3}
+  ]},cOpts({plugins:{legend:{display:false}}}));
+  mkChart('ch-dso','line',{labels:lbl,datasets:[
+    {label:'DSO (days)',data:t.map(r=>r.dso),borderColor:AC,backgroundColor:'transparent',borderWidth:2.5,pointRadius:3,tension:.3,yAxisID:'y'},
+    {label:'Coll. Eff.%',data:t.map(r=>r.collEff*100),borderColor:'#8b5cf6',backgroundColor:'transparent',borderWidth:2,pointRadius:3,borderDash:[4,3],tension:.3,yAxisID:'y1'}
+  ]},cOpts({scales:{
+    x:axes().x,
+    y:{...axes().y,position:'left',ticks:{color:AC,font:{size:10},callback:v=>v+'d'}},
+    y1:{...axes().y,position:'right',grid:{display:false},ticks:{color:'#8b5cf6',font:{size:10},callback:v=>v+'%'}}
+  }}));
+  const rows=t.map(r=>`<tr class="${r.isActual?'actual':'projected'}">
+    <td>${r.month}</td><td>${r.isActual?'Actual':'Projected'}</td>
+    <td style="color:#f87171;">${fk(r.ar)}</td><td>${fd(r.dso)}</td><td>${fp(r.collEff)}</td>
+  </tr>`).join('');
+  document.getElementById('ar-tbl').innerHTML=`<table><thead><tr>
+    <th>Month</th><th>Status</th><th>Closing AR</th><th>DSO</th><th>Coll. Eff.</th>
+  </tr></thead><tbody>${rows}</tbody></table>`;
+}
+
+/* ── Products ───────────────────────────── */
+function renderProducts(){
+  const k=D.kpis,t=D.monthly,lbl=t.map(r=>r.month);
+  document.getElementById('kpi-prod').innerHTML=
+    kpi('Product A',fk(k.salesA),'blue','Domestic')+
+    kpi('Product B',fk(k.salesB),'purple','Export')+
+    kpi('Product C',fk(k.salesC),'blue','Retail')+
+    kpi('Product D',fk(k.salesD),'green','Services');
+  const prods=[
+    {n:'Product A',s:k.salesA,c:k.collA,col:COLORS[0]},
+    {n:'Product B',s:k.salesB,c:k.collB,col:COLORS[1]},
+    {n:'Product C',s:k.salesC,c:k.collC,col:COLORS[2]},
+    {n:'Product D',s:k.salesD,c:k.collD,col:COLORS[3]}
+  ];
+  const mx=Math.max(...prods.map(p=>p.s),1);
+  document.getElementById('prod-bars').innerHTML=prods.map(p=>`
+    <div class="product-row">
+      <div class="product-name">${p.n}</div>
+      <div class="bar-bg"><div class="bar" style="width:${(p.s/mx*100).toFixed(1)}%;background:${p.col};"></div></div>
+      <div class="product-values"><span>${fk(p.s)}</span><span class="pos">${fk(p.c)}</span></div>
+    </div>`).join('');
+  mkChart('ch-mix','doughnut',{labels:prods.map(p=>p.n),datasets:[{data:prods.map(p=>p.s),backgroundColor:COLORS.map(c=>c+'bb'),borderColor:COLORS,borderWidth:2}]},{
+    responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{position:'bottom',labels:{color:'#7a8899',font:{size:10},boxWidth:10}}}
+  });
+  const sO=cOpts({scales:{x:{...axes().x,stacked:true},y:{...axes().y,stacked:true}}});
+  mkChart('ch-ps','bar',{labels:lbl,datasets:[
+    {label:'A',data:t.map(r=>r.salesA),backgroundColor:'rgba(59,130,246,.52)',stack:'s'},
+    {label:'B',data:t.map(r=>r.salesB),backgroundColor:'rgba(139,92,246,.52)',stack:'s'},
+    {label:'C',data:t.map(r=>r.salesC),backgroundColor:'rgba(6,182,212,.52)',stack:'s'},
+    {label:'D',data:t.map(r=>r.salesD),backgroundColor:'rgba(16,185,129,.52)',stack:'s'}
+  ]},sO);
+  mkChart('ch-pc','bar',{labels:lbl,datasets:[
+    {label:'A',data:t.map(r=>r.collA),backgroundColor:'rgba(59,130,246,.52)',stack:'c'},
+    {label:'B',data:t.map(r=>r.collB),backgroundColor:'rgba(139,92,246,.52)',stack:'c'},
+    {label:'C',data:t.map(r=>r.collC),backgroundColor:'rgba(6,182,212,.52)',stack:'c'},
+    {label:'D',data:t.map(r=>r.collD),backgroundColor:'rgba(16,185,129,.52)',stack:'c'}
+  ]},sO);
+}
+
+/* ── Drivers (view only) ────────────────── */
+function renderDrivers(){
+  const skip=['Parameter','Section','Default Value','Your Override','Used in Model','Note'];
+  const clean=(D.drivers||[]).filter(d=>!skip.includes(d.parameter)&&d.parameter!==d.section);
+  const secs={};
+  clean.forEach(d=>{if(!secs[d.section])secs[d.section]=[];secs[d.section].push(d);});
+  let html='';
+  Object.keys(secs).forEach(sec=>{
+    if(!sec||sec==='undefined')return;
+    html+=`<tr><td colspan="3" style="text-align:left;color:#60a5fa;background:rgba(59,130,246,.06);font-family:'IBM Plex Sans',sans-serif;font-weight:700;font-size:10px;text-transform:uppercase;letter-spacing:.8px;">${sec}</td></tr>`;
+    secs[sec].forEach(d=>{
+      const isPct=d.computed>0&&d.computed<2;
+      const fmt=v=>isPct?fp(v):fk(v);
+      html+=`<tr><td>${d.parameter}</td><td>${fmt(d.computed)}</td><td class="used">${fmt(d.used)}</td></tr>`;
+    });
+  });
+  document.getElementById('driv-tbody').innerHTML=html||'<tr><td colspan="3" style="color:var(--mut);padding:16px;">No driver data available.</td></tr>';
+}
+
+/* ── Tab switching ──────────────────────── */
+function sw(tab,el){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('sec-'+tab).classList.add('active');
+  setTimeout(()=>Object.values(charts).forEach(c=>c?.resize?.()),80);
+}
+
+/* ── Resize ─────────────────────────────── */
+let _rt;
+window.addEventListener('resize',()=>{clearTimeout(_rt);_rt=setTimeout(()=>Object.values(charts).forEach(c=>c?.resize?.()),150);});
+</script>
 </body>
 </html>
